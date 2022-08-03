@@ -4,8 +4,9 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./Factory.sol";
 
-contract MarketPlace is ReentrancyGuard {
+abstract contract MarketPlace is Factory {
     using Counters for Counters.Counter;
     //keep track of all token ids
     Counters.Counter private _itemIds;
@@ -190,5 +191,32 @@ contract MarketPlace is ReentrancyGuard {
             }
         }
         return items;
+    }
+
+    /**
+     @notice provide collateral to Factory contract
+     @param amount amount of collateral users wants to suply
+     */
+
+    function supplyCollateral(uint256 amount) public {
+        payable(factoryAddress).transfer(amount);
+        this.mintAssetsToCompound(msg.sender, amount);
+    }
+
+    /**
+     @notice borrow Asset from Factory contract
+     @param amount amount of asset users wants to borrow
+     */
+    function borrowAsset(uint256 amount) public {
+        this.borrowAssetFromCompound(msg.sender, amount);
+    }
+
+    /**
+     @notice repay borrowed Asset from Factory contract
+     @param amount amount of asset users wants to repay
+     */
+    function repayBorrowed(uint256 amount) public {
+        payable(factoryAddress).transfer(amount);
+        this.repayBorrowedAsset(msg.sender, amount);
     }
 }
