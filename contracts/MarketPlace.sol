@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./Factory.sol";
 
-abstract contract MarketPlace is Factory {
+contract MarketPlace is ReentrancyGuard {
     using Counters for Counters.Counter;
+    Factory public factory;
     //keep track of all token ids
     Counters.Counter private _itemIds;
     //keeps track of all sold tokenIDs
@@ -199,8 +200,8 @@ abstract contract MarketPlace is Factory {
      */
 
     function supplyCollateral(uint256 amount) public {
-        payable(factoryAddress).transfer(amount);
-        this.mintAssetsToCompound(msg.sender, amount);
+        payable(factory.getFactoryAddress()).transfer(amount);
+        factory.mintAssetsToCompound(msg.sender, amount);
     }
 
     /**
@@ -208,7 +209,7 @@ abstract contract MarketPlace is Factory {
      @param amount amount of asset users wants to borrow
      */
     function borrowAsset(uint256 amount) public {
-        this.borrowAssetFromCompound(msg.sender, amount);
+        factory.borrowAssetFromCompound(msg.sender, amount);
     }
 
     /**
@@ -216,7 +217,42 @@ abstract contract MarketPlace is Factory {
      @param amount amount of asset users wants to repay
      */
     function repayBorrowed(uint256 amount) public {
-        payable(factoryAddress).transfer(amount);
-        this.repayBorrowedAsset(msg.sender, amount);
+        payable(factory.getFactoryAddress()).transfer(amount);
+        factory.repayBorrowedAsset(msg.sender, amount);
+    }
+
+    /*** Safe Token ***/
+
+    /**
+     * @notice Gets balance of this contract in terms of Ether, before this message
+     * @dev This excludes the value of the current message, if any
+     * @return The quantity of Ether owned by this contract
+     */
+    function getCashPrior() internal view returns (uint256) {
+        return address(this).balance - msg.value;
+    }
+
+    /**
+     * @notice Perform the actual transfer in, which is a no-op
+     * @param from Address sending the Ether
+     * @param amount Amount of Ether being sent
+     * @return The actual amount of Ether transferred
+     */
+    function doTransferIn(address from, uint256 amount)
+        internal
+        returns (uint256)
+    {
+        // Sanity checks
+        require(msg.sender == from, "sender mismatch");
+        require(msg.value == amount, "value mismatch");
+        return amount;
+    }
+
+    function doTransferOut(address payable to, uint256 amount)
+        internal
+        virtual
+    {
+        /* Send the Ether, with minimal gas and revert on failure */
+        to.transfer(amount);
     }
 }

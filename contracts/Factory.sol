@@ -5,13 +5,11 @@ import "./compound/CToken.sol";
 import "./compound/Comptroller.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-abstract contract Factory is CToken {
+contract Factory is CToken {
     using SafeMath for uint256;
     address factoryAddress;
 
-    constructor() {
-        factoryAddress = address(this);
-    }
+    constructor() {}
 
     struct userBalance {
         address users;
@@ -35,6 +33,11 @@ abstract contract Factory is CToken {
         uint256 borrowBalance
     );
 
+    //get factory address
+    function getFactoryAddress() external view returns (address) {
+        return address(this);
+    }
+
     /**
      @notice provide collateral to Compound in place of the user
      @param _amount amount of collateral users wants to suply
@@ -57,7 +60,7 @@ abstract contract Factory is CToken {
         }
 
         //mint assents on users behalf by factory contract
-        CToken.mintInternal(_amount);
+        mintInternal(_amount);
         emit assetsMintedToCompund(_user, _amount, userId[_user].supplyBalance);
     }
 
@@ -80,7 +83,7 @@ abstract contract Factory is CToken {
         borrowLimit = borrowLimit.sub(_amount);
         userId[_user].borrowLimit = borrowLimit;
 
-        CToken.borrowInternal(_amount);
+        borrowInternal(_amount);
         //todo: look for a way to check if the contract has receieved the amount from the contract
         payable(_user).transfer(_amount);
         emit assetsborrowedFromCompund(
@@ -109,6 +112,44 @@ abstract contract Factory is CToken {
             _repayAmount
         );
         userId[_user].borrowLimit = userId[_user].borrowLimit.add(_repayAmount);
-        CToken.redeemInternal(_repayAmount);
+        redeemInternal(_repayAmount);
+    }
+
+    /*** Safe Token ***/
+
+    /**
+     * @notice Gets balance of this contract in terms of Ether, before this message
+     * @dev This excludes the value of the current message, if any
+     * @return The quantity of Ether owned by this contract
+     */
+    function getCashPrior() internal view virtual override returns (uint256) {
+        return address(this).balance - msg.value;
+    }
+
+    /**
+     * @notice Perform the actual transfer in, which is a no-op
+     * @param from Address sending the Ether
+     * @param amount Amount of Ether being sent
+     * @return The actual amount of Ether transferred
+     */
+    function doTransferIn(address from, uint256 amount)
+        internal
+        virtual
+        override
+        returns (uint256)
+    {
+        // Sanity checks
+        require(msg.sender == from, "sender mismatch");
+        require(msg.value == amount, "value mismatch");
+        return amount;
+    }
+
+    function doTransferOut(address payable to, uint256 amount)
+        internal
+        virtual
+        override
+    {
+        /* Send the Ether, with minimal gas and revert on failure */
+        to.transfer(amount);
     }
 }
