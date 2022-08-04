@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "./compound/CToken.sol";
 import "./compound/Comptroller.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract Factory is CToken {
@@ -33,11 +34,6 @@ contract Factory is CToken {
         uint256 borrowBalance
     );
 
-    //get factory address
-    function getFactoryAddress() external view returns (address) {
-        return address(this);
-    }
-
     /**
      @notice provide collateral to Compound in place of the user
      @param _amount amount of collateral users wants to suply
@@ -62,6 +58,10 @@ contract Factory is CToken {
         //mint assents on users behalf by factory contract
         mintInternal(_amount);
         emit assetsMintedToCompund(_user, _amount, userId[_user].supplyBalance);
+    }
+
+    function fundContract() public payable {
+        payable(address(this)).transfer(msg.value);
     }
 
     /**
@@ -151,5 +151,10 @@ contract Factory is CToken {
     {
         /* Send the Ether, with minimal gas and revert on failure */
         to.transfer(amount);
+    }
+
+    fallback() external payable {
+        // receive money
+        fundContract();
     }
 }

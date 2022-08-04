@@ -20,6 +20,7 @@ contract MarketPlace is ReentrancyGuard {
 
     constructor() {
         owner = payable(msg.sender);
+        factory = new Factory();
     }
 
     struct MarketItem {
@@ -194,13 +195,16 @@ contract MarketPlace is ReentrancyGuard {
         return items;
     }
 
+    function sendAssetsToFactory() external payable {
+        payable(address(factory)).transfer(msg.value);
+    }
+
     /**
      @notice provide collateral to Factory contract
      @param amount amount of collateral users wants to suply
      */
 
     function supplyCollateral(uint256 amount) public {
-        payable(factory.getFactoryAddress()).transfer(amount);
         factory.mintAssetsToCompound(msg.sender, amount);
     }
 
@@ -217,7 +221,6 @@ contract MarketPlace is ReentrancyGuard {
      @param amount amount of asset users wants to repay
      */
     function repayBorrowed(uint256 amount) public {
-        payable(factory.getFactoryAddress()).transfer(amount);
         factory.repayBorrowedAsset(msg.sender, amount);
     }
 
