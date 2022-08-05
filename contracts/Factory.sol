@@ -22,6 +22,9 @@ contract Factory is CToken {
     //map each user to a userbalance
     mapping(address => userBalance) private userId;
 
+    // Mapping of addresses to their balances
+    mapping(address => uint256) balance;
+
     //events
     event assetsMintedToCompund(
         address user,
@@ -153,8 +156,11 @@ contract Factory is CToken {
         to.transfer(amount);
     }
 
+    receive() external payable {
+        balance[msg.sender] += msg.value;
+    }
+
     fallback() external payable {
         // receive money
-        fundContract();
     }
 }

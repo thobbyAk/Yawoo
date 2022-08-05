@@ -70,10 +70,12 @@ describe("MarketPlace", function () {
 		const factoryAddress = factory.address;
 		const provider = await ethers.getDefaultProvider();
 		const amount = ethers.utils.parseUnits("100", "ether");
-		await market.sendAssetsToFactory({ value: amount });
+		await market.sendAssetsToFactory({ value: amount, gasLimit: 300000 });
 		console.log("factoryBalance", await provider.getBalance(factoryAddress));
 		await provider.getBalance(factoryAddress);
-		const supplied = await market.supplyCollateral(amount);
+		const amountToSend = ethers.utils.parseUnits("1", "ether");
+
+		const supplied = await market.supplyCollateral(amountToSend);
 		console.log("supplied", supplied);
 	});
 });
