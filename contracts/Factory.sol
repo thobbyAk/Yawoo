@@ -156,7 +156,7 @@ contract Factory is CToken {
         to.transfer(amount);
     }
 
-    receive() external payable {
+    function receive() external payable {
         balance[msg.sender] += msg.value;
     }
 

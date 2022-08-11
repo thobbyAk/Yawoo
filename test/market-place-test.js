@@ -1,6 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+let user = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+
 describe("MarketPlace", function () {
 	it("Should create and execute market sales", async function () {
 		const Market = await ethers.getContractFactory("MarketPlace");
@@ -69,13 +71,21 @@ describe("MarketPlace", function () {
 		await factory.deployed();
 		const factoryAddress = factory.address;
 		const provider = await ethers.getDefaultProvider();
+		console.log("getting here");
+		const [_, userAddress] = await ethers.getSigners();
+		const getUserBalance = await provider.getBalance(userAddress.address);
+		const getFactoryBalance = await provider.getBalance(factoryAddress);
+		console.log("factory Balance before", getFactoryBalance);
 		const amount = ethers.utils.parseUnits("100", "ether");
-		await market.sendAssetsToFactory({ value: amount, gasLimit: 300000 });
+		await factory.receive({
+			value: amount,
+		});
+		console.log("factory Balance", getFactoryBalance);
 		console.log("factoryBalance", await provider.getBalance(factoryAddress));
 		await provider.getBalance(factoryAddress);
-		const amountToSend = ethers.utils.parseUnits("1", "ether");
+		const amountToSend = ethers.utils.parseUnits("10", "ether");
 
-		const supplied = await market.supplyCollateral(amountToSend);
+		const supplied = await market.supplyCollateral(amount);
 		console.log("supplied", supplied);
 	});
 });
